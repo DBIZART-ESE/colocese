@@ -710,6 +710,26 @@
   .mt-2 { margin-top: 16px; }
   .mt-3 { margin-top: 24px; }
   .flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+  /* ── Admin ─────────────────────────────────────────────── */
+  .admin-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .admin-row:last-child { border-bottom: none; }
+  .admin-row-info { display: flex; flex-direction: column; gap: 2px; }
+  .admin-row-name { font-weight: 500; }
+  .admin-row-sub { font-size: 11px; color: var(--text-muted); }
+  .admin-actions { display: flex; gap: 6px; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; font-family: var(--font); border: 1px solid; }
+  .btn-sm-danger { background: transparent; border-color: #fca5a5; color: #dc2626; }
+  .btn-sm-danger:hover { background: #fee2e2; }
+  .btn-sm-success { background: transparent; border-color: #86efac; color: #1a7a35; }
+  .btn-sm-success:hover { background: #e6f9ec; }
+  .report-motif { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 3px; }
+  .badge-traite { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: #e6f9ec; color: #1a7a35; border: 1px solid #86efac; }
+  .badge-nontraite { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 </style>
 </head>
 <body>
@@ -774,7 +794,7 @@
       <div class="consent-box">
         <input type="checkbox" id="consent-rgpd">
         <label for="consent-rgpd" style="font-weight:400; color:inherit; margin:0;">
-          J'ai lu et j'accepte la <a href="#" style="color:inherit; font-weight:600;">charte d'utilisation</a> et la politique de confidentialité. Je consens au traitement de mes données personnelles par l'École Schneider Electric aux fins de mise en relation pour la colocation.
+          J'ai lu et j'accepte la <a href="https://dbizart-ese.github.io/colocese/charte.html" target="_blank" style="color:inherit; font-weight:600;">charte d'utilisation</a> et la politique de confidentialité. Je consens au traitement de mes données personnelles par l'École Schneider Electric aux fins de mise en relation pour la colocation.
         </label>
       </div>
       <button class="btn btn-primary" onclick="register()">Créer mon compte</button>
@@ -814,6 +834,10 @@
     <button class="nav-btn" onclick="showTab('monprofil')" id="nav-monprofil">
       <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Mon profil
+    </button>
+    <button class="nav-btn hidden" onclick="showTab('admin')" id="nav-admin">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Admin
     </button>
   </nav>
 
@@ -956,6 +980,44 @@
     </div>
 
   </main>
+
+    <!-- ── Écran Admin ──────────────────────────────────── -->
+    <div id="screen-admin" class="screen" style="padding:20px;">
+      <div style="max-width:900px; margin:0 auto;">
+        <h2 style="font-size:18px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
+          <span>🛡️</span> Administration ColocESE
+        </h2>
+
+        <!-- Stats -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px;">
+          <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:var(--green);" id="stat-users">—</div>
+            <div style="font-size:12px; color:var(--text-muted);">Utilisateurs</div>
+          </div>
+          <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#185FA5;" id="stat-reports">—</div>
+            <div style="font-size:12px; color:var(--text-muted);">Signalements</div>
+          </div>
+          <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#854F0B;" id="stat-reports-open">—</div>
+            <div style="font-size:12px; color:var(--text-muted);">Non traités</div>
+          </div>
+        </div>
+
+        <!-- Signalements -->
+        <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:20px;">
+          <h3 style="font-size:14px; font-weight:600; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">⚑ Signalements</h3>
+          <div id="admin-reports"><div class="loader"><div class="spinner"></div> Chargement…</div></div>
+        </div>
+
+        <!-- Utilisateurs -->
+        <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px;">
+          <h3 style="font-size:14px; font-weight:600; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">👥 Utilisateurs inscrits</h3>
+          <div id="admin-users"><div class="loader"><div class="spinner"></div> Chargement…</div></div>
+        </div>
+      </div>
+    </div>
+
 </div>
 
 <!-- Modal suppression compte -->
@@ -1091,12 +1153,31 @@ async function logout() {
 // ============================================================
 // SESSION
 // ============================================================
+let appInitialized = false;
+
 sb.auth.onAuthStateChange(async (event, session) => {
-  if (session?.user) {
+  if (session?.user && !appInitialized) {
+    appInitialized = true;
     currentUser = session.user;
     await initApp();
+  } else if (event === 'SIGNED_OUT') {
+    appInitialized = false;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
   }
 });
+
+// Fix refresh : vérifier la session existante au chargement
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user && !appInitialized) {
+    appInitialized = true;
+    currentUser = session.user;
+    await initApp();
+  } else if (!session) {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+})();
 
 async function initApp() {
   document.getElementById('auth-screen').style.display = 'none';
@@ -1113,6 +1194,11 @@ async function initApp() {
   if (profile) fillProfileForm(profile);
   subscribeRealtime();
   checkUnread();
+
+  // Afficher le bouton admin si l'utilisateur est admin
+  if (isAdmin()) {
+    document.getElementById('nav-admin').classList.remove('hidden');
+  }
 }
 
 // ============================================================
@@ -1440,12 +1526,94 @@ async function submitReport() {
 // ============================================================
 // NAVIGATION
 // ============================================================
+// Email(s) admin — ajoute ton adresse ici
+const ADMIN_EMAILS = ['damien.bizart@ecole-se.org'];
+
+function isAdmin() {
+  return currentUser && ADMIN_EMAILS.includes(currentUser.email);
+}
+
 function showTab(tab) {
-  ['profils', 'chat', 'monprofil'].forEach(t => {
-    document.getElementById('screen-' + t).classList.toggle('active', t === tab);
-    document.getElementById('nav-' + t).classList.toggle('active', t === tab);
+  const tabs = ['profils', 'chat', 'monprofil'];
+  if (isAdmin()) tabs.push('admin');
+  tabs.forEach(t => {
+    const screen = document.getElementById('screen-' + t);
+    const nav = document.getElementById('nav-' + t);
+    if (screen) screen.classList.toggle('active', t === tab);
+    if (nav) nav.classList.toggle('active', t === tab);
   });
   if (tab === 'chat') { loadConversations(); if (activeChat) loadMessages(activeChat.id); }
+  if (tab === 'admin') loadAdminData();
+}
+
+async function loadAdminData() {
+  // Stats utilisateurs
+  const { data: users } = await sb.from('profiles').select('id, prenom, initiale_nom, formation, situation, visible, created_at');
+  const { data: reports } = await sb.from('reports').select('*, profiles!reporter_id(prenom, initiale_nom)');
+
+  const total = users?.length || 0;
+  const totalReports = reports?.length || 0;
+  const openReports = reports?.filter(r => !r.traite).length || 0;
+
+  document.getElementById('stat-users').textContent = total;
+  document.getElementById('stat-reports').textContent = totalReports;
+  document.getElementById('stat-reports-open').textContent = openReports;
+
+  // Signalements
+  const reportsEl = document.getElementById('admin-reports');
+  if (!reports?.length) {
+    reportsEl.innerHTML = '<p class="text-muted text-sm" style="padding:10px">Aucun signalement.</p>';
+  } else {
+    reportsEl.innerHTML = reports.map(r => `
+      <div class="admin-row">
+        <div class="admin-row-info">
+          <div class="admin-row-name">
+            Signalement du ${new Date(r.created_at).toLocaleDateString('fr-FR')}
+            <span class="${r.traite ? 'badge-traite' : 'badge-nontraite'}" style="margin-left:6px">${r.traite ? 'Traité' : 'En attente'}</span>
+          </div>
+          <div class="report-motif">"${escapeHtml(r.motif)}"</div>
+          <div class="admin-row-sub">Par : ${r.profiles?.prenom || '?'} ${r.profiles?.initiale_nom || ''} — Utilisateur signalé : ${r.reported_id?.slice(0,8)}…</div>
+        </div>
+        <div class="admin-actions">
+          ${!r.traite ? `<button class="btn-sm btn-sm-success" onclick="markReportDone('${r.id}')">✓ Traité</button>` : ''}
+          <button class="btn-sm btn-sm-danger" onclick="deleteUserById('${r.reported_id}')">🗑 Supprimer user</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Utilisateurs
+  const usersEl = document.getElementById('admin-users');
+  if (!users?.length) {
+    usersEl.innerHTML = '<p class="text-muted text-sm" style="padding:10px">Aucun utilisateur.</p>';
+  } else {
+    usersEl.innerHTML = users.map(u => `
+      <div class="admin-row">
+        <div class="admin-row-info">
+          <div class="admin-row-name">${u.prenom} ${u.initiale_nom}. ${!u.visible ? '<span style="font-size:11px;color:var(--text-muted)">(profil masqué)</span>' : ''}</div>
+          <div class="admin-row-sub">${u.formation || 'Formation non renseignée'} · ${u.situation === 'appart_dispo' ? '🏠 A un appart' : '🔍 Cherche'} · Inscrit le ${new Date(u.created_at).toLocaleDateString('fr-FR')}</div>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-sm btn-sm-danger" onclick="confirmDeleteUser('${u.id}', '${u.prenom} ${u.initiale_nom}')">🗑 Supprimer</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+async function markReportDone(reportId) {
+  await sb.from('reports').update({ traite: true }).eq('id', reportId);
+  loadAdminData();
+}
+
+function confirmDeleteUser(userId, name) {
+  if (confirm(`Supprimer définitivement le compte de ${name} ? Cette action est irréversible.`)) {
+    deleteUserById(userId);
+  }
+}
+
+async function deleteUserById(userId) {
+  await sb.from('profiles').delete().eq('id', userId);
+  alert('Profil supprimé. Le compte auth sera nettoyé automatiquement via la cascade.');
+  loadAdminData();
 }
 
 // ============================================================
