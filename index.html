@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColocESE — Colocation étudiants</title>
+<meta name="description" content="Application de mise en relation colocation — École Schneider Electric">
+<meta name="theme-color" content="#3DCD58">
+
+<!-- Supabase JS -->
+<script src="supabase.js"></script>
+
+<style>
+  /* ── Reset & variables ─────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:       #3DCD58;
+    --green-dark:  #1a7a35;
+    --green-light: #e6f9ec;
+    --navy:        #1a2332;
+    --text:        #1a2332;
+    --text-muted:  #6b7280;
+    --text-light:  #9ca3af;
+    --bg:          #f9fafb;
+    --bg-card:     #ffffff;
+    --border:      #e5e7eb;
+    --border-mid:  #d1d5db;
+    --radius:      10px;
+    --radius-lg:   14px;
+    --shadow:      0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:   0 4px 16px rgba(0,0,0,.10);
+    --font:        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── Auth screens ──────────────────────────────────────── */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #f0faf2 0%, #e8f4fd 100%);
+  }
+
+  .auth-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .auth-logo-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--green);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .auth-logo-icon svg { width: 22px; height: 22px; fill: white; }
+
+  .auth-logo-text { font-size: 20px; font-weight: 700; color: var(--navy); }
+  .auth-logo-text span { color: var(--green); }
+
+  .auth-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .auth-tabs {
+    display: flex;
+    border-bottom: 1.5px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px;
+    transition: all .2s;
+  }
+
+  .auth-tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; }
+
+  input[type=email], input[type=password], input[type=text],
+  input[type=number], textarea, select {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg-card);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(61,205,88,.15);
+  }
+
+  .form-group { margin-bottom: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 20px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all .2s;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: white;
+    width: 100%;
+  }
+
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  .consent-box {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius);
+    padding: 12px;
+    font-size: 12px;
+    color: #92400e;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .consent-box input[type=checkbox] { width: auto; margin-top: 1px; flex-shrink: 0; }
+
+  .alert {
+    padding: 10px 13px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
+  .alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .alert-success { background: var(--green-light); color: var(--green-dark); border: 1px solid #86efac; }
+
+  /* ── App layout ────────────────────────────────────────── */
+  #app-screen { display: none; height: 100vh; flex-direction: column; }
+
+  .app-header {
+    background: var(--navy);
+    color: white;
+    padding: 0 20px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .header-logo-dot {
+    width: 28px;
+    height: 28px;
+    background: var(--green);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-logo-dot svg { width: 16px; height: 16px; fill: white; }
+
+  .header-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: rgba(255,255,255,.8);
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .app-nav {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: var(--font);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+  .nav-btn svg { width: 20px; height: 20px; }
+
+  .app-content { flex: 1; overflow-y: auto; }
+
+  .screen { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* ── Profils ───────────────────────────────────────────── */
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .search-bar input { flex: 1; }
+
+  .profiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .profile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    transition: box-shadow .2s, border-color .2s;
+  }
+
+  .profile-card:hover { box-shadow: var(--shadow-md); border-color: var(--green); }
+
+  .profile-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .profile-card-info .name { font-weight: 600; font-size: 15px; }
+  .profile-card-info .sub { font-size: 12px; color: var(--text-muted); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+
+  .tag {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 99px;
+    background: var(--bg);
+    border: 1px solid var(--border-mid);
+    color: var(--text-muted);
+  }
+
+  .profile-detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+
+  .profile-detail-row strong { color: var(--text); }
+
+  .profile-bio {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 10px 0;
+    padding: 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    line-height: 1.6;
+  }
+
+  .contact-btn {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--green);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--green-dark);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 10px;
+  }
+
+  .contact-btn:hover { background: var(--green); color: white; }
+
+  /* ── Badge situation ───────────────────────────────────── */
+  .situation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+  }
+  .badge-appart { background: #e6f9ec; color: #1a7a35; border: 1px solid #86efac; }
+  .badge-cherche { background: #e6f1fb; color: #185FA5; border: 1px solid #b5d4f4; }
+  .badge-trouve { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+
+  /* ── Filtres situation ─────────────────────────────────── */
+  .filter-btns { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border-mid);
+    background: transparent; font-size: 12px; font-weight: 500; font-family: var(--font);
+    color: var(--text-muted); cursor: pointer; transition: all .2s;
+  }
+  .filter-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .filter-btn:hover:not(.active) { border-color: var(--navy); color: var(--navy); }
+
+  /* ── Choix situation formulaire ────────────────────────── */
+  .situation-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+  .situation-option {
+    border: 1.5px solid var(--border-mid); border-radius: var(--radius);
+    padding: 12px; cursor: pointer; transition: all .2s; text-align: center;
+  }
+  .situation-option.selected.appart { border-color: #3DCD58; background: #e6f9ec; }
+  .situation-option.selected.cherche { border-color: #378ADD; background: #e6f1fb; }
+  .situation-option.selected.trouve { border-color: #6b7280; background: #f3f4f6; }
+  .situation-option:hover:not(.selected) { background: var(--bg); }
+  .situation-option .sit-icon { font-size: 22px; margin-bottom: 4px; }
+  .situation-option .sit-label { font-size: 12px; font-weight: 600; color: var(--text); }
+  .situation-option .sit-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Chat ──────────────────────────────────────────────── */
+  .chat-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    height: calc(100vh - 54px - 50px - 40px);
+    gap: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .chat-list-panel {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .chat-list-header {
+    padding: 14px;
+    font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+  }
+
+  .chat-list-item {
+    padding: 12px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .chat-list-item:hover, .chat-list-item.active { background: var(--green-light); }
+
+  .chat-list-info { flex: 1; min-width: 0; }
+  .chat-list-name { font-size: 13px; font-weight: 600; }
+  .chat-list-preview { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  .chat-window { display: flex; flex-direction: column; }
+
+  .chat-window-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .chat-window-name { font-weight: 600; font-size: 14px; }
+  .chat-window-sub { font-size: 12px; color: var(--text-muted); }
+
+  .report-btn { margin-left: auto; color: var(--text-light); font-size: 12px; cursor: pointer; background: none; border: none; font-family: var(--font); padding: 4px 8px; border-radius: 6px; transition: all .2s; }
+  .report-btn:hover { background: #fee2e2; color: #dc2626; }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .msg { max-width: 72%; }
+  .msg.sent { align-self: flex-end; }
+  .msg.recv { align-self: flex-start; }
+
+  .msg-bubble {
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .msg.sent .msg-bubble { background: var(--green); color: white; border-bottom-right-radius: 3px; }
+  .msg.recv .msg-bubble { background: var(--bg); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+
+  .msg-time { font-size: 10px; color: var(--text-light); margin-top: 3px; }
+  .msg.sent .msg-time { text-align: right; }
+
+  .chat-input-area {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1px solid var(--border-mid);
+    border-radius: 22px;
+    font-size: 13px;
+    font-family: var(--font);
+    resize: none;
+    max-height: 100px;
+    overflow-y: auto;
+    outline: none;
+  }
+
+  .chat-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(61,205,88,.12); }
+
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--green);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .2s;
+  }
+
+  .send-btn:hover { background: var(--green-dark); }
+  .send-btn svg { width: 16px; height: 16px; fill: white; }
+
+  .chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  /* ── Mon profil ────────────────────────────────────────── */
+  .profile-edit-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    max-width: 560px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .privacy-banner {
+    background: var(--green-light);
+    border: 1px solid #86efac;
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-size: 12px;
+    color: var(--green-dark);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .privacy-banner svg { width: 16px; height: 16px; fill: var(--green); flex-shrink: 0; margin-top: 1px; }
+
+  .tags-input-area {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 8px;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    min-height: 44px;
+    cursor: text;
+  }
+
+  .tag-removable {
+    font-size: 12px;
+    padding: 3px 8px;
+    background: var(--green-light);
+    border: 1px solid #86efac;
+    color: var(--green-dark);
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tag-removable button { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: var(--green-dark); padding: 0; }
+
+  .tag-input { border: none; outline: none; font-size: 12px; font-family: var(--font); flex: 1; min-width: 80px; }
+
+  .visible-toggle { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .toggle { position: relative; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--border-mid); border-radius: 10px; transition: .2s;
+    cursor: pointer;
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; height: 14px; width: 14px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--green); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  .danger-zone {
+    margin-top: 24px;
+    padding: 16px;
+    border: 1px solid #fca5a5;
+    border-radius: var(--radius);
+    background: #fff5f5;
+  }
+
+  .danger-zone h4 { font-size: 13px; color: #dc2626; margin-bottom: 6px; }
+  .danger-zone p { font-size: 12px; color: #7f1d1d; margin-bottom: 12px; }
+
+  /* ── Loader ────────────────────────────────────────────── */
+  .loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Modal ─────────────────────────────────────────────── */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+  }
+
+  .modal h3 { font-size: 16px; margin-bottom: 12px; }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── Responsive ────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .chat-layout { grid-template-columns: 1fr; }
+    .chat-list-panel { display: none; }
+    .chat-list-panel.mobile-show { display: block; }
+    .profiles-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .auth-card { padding: 24px; }
+  }
+
+  /* ── Utilitaires ───────────────────────────────────────── */
+  .hidden { display: none !important; }
+  .text-muted { color: var(--text-muted); }
+  .text-sm { font-size: 13px; }
+  .mt-1 { margin-top: 8px; }
+  .mt-2 { margin-top: 16px; }
+  .mt-3 { margin-top: 24px; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+  /* ── Admin ─────────────────────────────────────────────── */
+  .admin-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .admin-row:last-child { border-bottom: none; }
+  .admin-row-info { display: flex; flex-direction: column; gap: 2px; }
+  .admin-row-name { font-weight: 500; }
+  .admin-row-sub { font-size: 11px; color: var(--text-muted); }
+  .admin-actions { display: flex; gap: 6px; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; font-family: var(--font); border: 1px solid; }
+  .btn-sm-danger { background: transparent; border-color: #fca5a5; color: #dc2626; }
+  .btn-sm-danger:hover { background: #fee2e2; }
+  .btn-sm-success { background: transparent; border-color: #86efac; color: #1a7a35; }
+  .btn-sm-success:hover { background: #e6f9ec; }
+  .report-motif { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 3px; }
+  .badge-traite { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: #e6f9ec; color: #1a7a35; border: 1px solid #86efac; }
+  .badge-nontraite { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     AUTH SCREEN
+══════════════════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      </div>
+      <div class="auth-logo-text">Coloc<span>ESE</span></div>
+    </div>
+    <p class="auth-subtitle">Mis en relation colocation — École Schneider Electric</p>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Connexion</div>
+      <div class="auth-tab" onclick="switchTab('register')">Inscription</div>
+    </div>
+
+    <div id="auth-alert" class="alert hidden"></div>
+
+    <!-- Connexion -->
+    <div id="tab-login">
+      <div class="form-group">
+        <label for="login-email">Adresse mail</label>
+        <input type="email" id="login-email" placeholder="prenom.nom@ecole-se.fr" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="login-pass">Mot de passe</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" onclick="login()">Se connecter</button>
+    </div>
+
+    <!-- Inscription -->
+    <div id="tab-register" class="hidden">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="reg-prenom">Prénom *</label>
+          <input type="text" id="reg-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label for="reg-initiale">Initiale nom *</label>
+          <input type="text" id="reg-initiale" placeholder="B" maxlength="1" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Adresse mail école *</label>
+        <input type="email" id="reg-email" placeholder="prenom.nom@ecole-se.fr" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="reg-pass">Mot de passe *</label>
+        <input type="password" id="reg-pass" placeholder="8 caractères minimum" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label for="reg-pass2">Confirmer le mot de passe *</label>
+        <input type="password" id="reg-pass2" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="consent-box">
+        <input type="checkbox" id="consent-rgpd">
+        <label for="consent-rgpd" style="font-weight:400; color:inherit; margin:0;">
+          J'ai lu et j'accepte la <a href="https://dbizart-ese.github.io/colocese/charte.html" target="_blank" style="color:inherit; font-weight:600;">charte d'utilisation</a> et la politique de confidentialité. Je consens au traitement de mes données personnelles par l'École Schneider Electric aux fins de mise en relation pour la colocation.
+        </label>
+      </div>
+      <button class="btn btn-primary" onclick="register()">Créer mon compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SCREEN
+══════════════════════════════════════════════════════════ -->
+<div id="app-screen" style="display:none; flex-direction:column; height:100vh;">
+
+  <header class="app-header">
+    <div class="header-logo">
+      <div class="header-logo-dot">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      </div>
+      ColocESE
+    </div>
+    <div class="header-user">
+      <div class="avatar" id="header-avatar">?</div>
+      <span id="header-name"></span>
+      <button class="btn-outline" onclick="logout()" style="color:rgba(255,255,255,.7); border-color:rgba(255,255,255,.3); padding:5px 10px; font-size:12px;">Déconnexion</button>
+    </div>
+  </header>
+
+  <nav class="app-nav">
+    <button class="nav-btn active" onclick="showTab('profils')" id="nav-profils">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Profils
+    </button>
+    <button class="nav-btn" onclick="showTab('chat')" id="nav-chat">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Messages
+      <span id="unread-badge" class="hidden" style="background:var(--green);color:white;font-size:10px;padding:1px 5px;border-radius:99px;">0</span>
+    </button>
+    <button class="nav-btn" onclick="showTab('monprofil')" id="nav-monprofil">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Mon profil
+    </button>
+    <button class="nav-btn hidden" onclick="showTab('admin')" id="nav-admin">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Admin
+    </button>
+  </nav>
+
+  <main class="app-content">
+
+    <!-- ── Écran Profils ─────────────────────────────────── -->
+    <div id="screen-profils" class="screen active">
+      <div class="filter-btns">
+        <button class="filter-btn active" onclick="setSituationFilter('')">Tous</button>
+        <button class="filter-btn" onclick="setSituationFilter('appart_dispo')">🏠 A un appart</button>
+        <button class="filter-btn" onclick="setSituationFilter('cherche_coloc')">🔍 Cherche une coloc</button>
+        <button class="filter-btn" onclick="setSituationFilter('coloc_trouvee')">✅ Coloc trouvée</button>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Rechercher par prénom, formation, zone…" oninput="filterProfiles()">
+        <select id="filter-formation" onchange="filterProfiles()" style="width:auto;">
+          <option value="">Toutes formations</option>
+          <option>BTS FED 1+1</option>
+          <option>BTS FED 0+2</option>
+          <option>BTS Électrotechnique</option>
+          <option>BTS CIEL IR</option>
+        </select>
+      </div>
+      <div id="profiles-container" class="profiles-grid">
+        <div class="loader"><div class="spinner"></div> Chargement…</div>
+      </div>
+    </div>
+
+    <!-- ── Écran Chat ────────────────────────────────────── -->
+    <div id="screen-chat" class="screen" style="padding:16px;">
+      <div class="chat-layout" id="chat-layout">
+        <div class="chat-list-panel">
+          <div class="chat-list-header">💬 Conversations</div>
+          <div id="chat-list"></div>
+        </div>
+        <div class="chat-window" id="chat-window">
+          <div class="chat-empty">
+            <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" fill="none" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Sélectionne une conversation</span>
+            <span class="text-muted text-sm">ou contacte un profil depuis l'onglet Profils</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Écran Mon profil ──────────────────────────────── -->
+    <div id="screen-monprofil" class="screen">
+      <div class="profile-edit-card">
+        <div class="privacy-banner">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Seul ton <strong>prénom</strong> et ton <strong>initiale de nom</strong> sont visibles des autres étudiants. Ton adresse mail reste strictement confidentielle.</span>
+        </div>
+
+        <div class="section-title">Informations de profil</div>
+        <div id="profile-alert" class="alert hidden"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prénom</label>
+            <input type="text" id="edit-prenom">
+          </div>
+          <div class="form-group">
+            <label>Initiale du nom</label>
+            <input type="text" id="edit-initiale" maxlength="1" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Ma situation</label>
+          <div class="situation-choice" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="situation-option appart" id="sit-appart" onclick="selectSituation('appart_dispo')">
+              <div class="sit-icon">🏠</div>
+              <div class="sit-label">J'ai un appart</div>
+              <div class="sit-sub">Je cherche un coloc</div>
+            </div>
+            <div class="situation-option cherche selected" id="sit-cherche" onclick="selectSituation('cherche_coloc')">
+              <div class="sit-icon">🔍</div>
+              <div class="sit-label">Je cherche</div>
+              <div class="sit-sub">Pas encore de logement</div>
+            </div>
+            <div class="situation-option trouve" id="sit-trouve" onclick="selectSituation('coloc_trouvee')">
+              <div class="sit-icon">✅</div>
+              <div class="sit-label">Coloc trouvée !</div>
+              <div class="sit-sub">Je ne cherche plus</div>
+            </div>
+          </div>
+          <input type="hidden" id="edit-situation" value="cherche_coloc">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Âge</label>
+            <input type="number" id="edit-age" min="16" max="35">
+          </div>
+          <div class="form-group">
+            <label>Formation</label>
+            <select id="edit-formation">
+              <option value="">Choisir…</option>
+              <option>BTS FED 1+1</option>
+              <option>BTS FED 0+2</option>
+              <option>BTS Électrotechnique</option>
+              <option>BTS CIEL IR</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Budget min (€/mois)</label>
+            <input type="number" id="edit-budget-min" min="100" max="2000">
+          </div>
+          <div class="form-group">
+            <label>Budget max (€/mois)</label>
+            <input type="number" id="edit-budget-max" min="100" max="2000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Zone souhaitée</label>
+          <input type="text" id="edit-zone" placeholder="Ex : Grenoble centre, Échirolles…">
+        </div>
+        <div class="form-group">
+          <label>À propos de moi (500 car. max)</label>
+          <textarea id="edit-bio" rows="3" maxlength="500" placeholder="Quelques mots sur toi, tes habitudes de vie…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Tags (appuie Entrée pour ajouter)</label>
+          <div class="tags-input-area" id="tags-area" onclick="document.getElementById('tag-input').focus()">
+            <input type="text" id="tag-input" class="tag-input" placeholder="Non-fumeur, Sportif…" onkeydown="handleTagInput(event)">
+          </div>
+        </div>
+        <div class="form-group mt-2">
+          <div class="visible-toggle">
+            <label class="toggle" for="toggle-visible">
+              <input type="checkbox" id="toggle-visible" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="font-size:13px;">Mon profil est visible des autres étudiants</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary mt-3" onclick="saveProfile()">Enregistrer</button>
+
+        <div class="danger-zone">
+          <h4>Zone de suppression</h4>
+          <p>La suppression de ton compte efface définitivement toutes tes données (profil, messages) conformément au RGPD. Cette action est irréversible.</p>
+          <button class="btn btn-danger" onclick="openDeleteModal()">Supprimer mon compte</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+    <!-- ── Écran Admin ──────────────────────────────────── -->
+    <div id="screen-admin" class="screen" style="padding:20px;">
+      <div style="max-width:900px; margin:0 auto;">
+        <h2 style="font-size:18px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
+          <span>🛡️</span> Administration ColocESE
+        </h2>
+
+        <!-- Stats -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px;">
+          <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:var(--green);" id="stat-users">—</div>
+            <div style="font-size:12px; color:var(--text-muted);">Utilisateurs</div>
+          </div>
+          <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#185FA5;" id="stat-reports">—</div>
+            <div style="font-size:12px; color:var(--text-muted);">Signalements</div>
+          </div>
+          <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#854F0B;" id="stat-reports-open">—</div>
+            <div style="font-size:12px; color:var(--text-muted);">Non traités</div>
+          </div>
+        </div>
+
+        <!-- Signalements -->
+        <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:20px;">
+          <h3 style="font-size:14px; font-weight:600; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">⚑ Signalements</h3>
+          <div id="admin-reports"><div class="loader"><div class="spinner"></div> Chargement…</div></div>
+        </div>
+
+        <!-- Utilisateurs -->
+        <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px;">
+          <h3 style="font-size:14px; font-weight:600; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">👥 Utilisateurs inscrits</h3>
+          <div id="admin-users"><div class="loader"><div class="spinner"></div> Chargement…</div></div>
+        </div>
+      </div>
+    </div>
+
+</div>
+
+<!-- Modal suppression compte -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal">
+    <h3>Supprimer mon compte</h3>
+    <p>Toutes tes données seront effacées définitivement : profil, messages, et toutes les informations associées. Cette action ne peut pas être annulée.</p>
+    <div class="form-group">
+      <label>Saisis ton mot de passe pour confirmer</label>
+      <input type="password" id="delete-confirm-pass" placeholder="••••••••">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn btn-danger" onclick="deleteAccount()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal signalement -->
+<div class="modal-backdrop" id="report-modal">
+  <div class="modal">
+    <h3>Signaler un problème</h3>
+    <p>Décris brièvement le problème. L'équipe de l'école sera notifiée et traitera le signalement.</p>
+    <div class="form-group">
+      <textarea id="report-motif" rows="3" placeholder="Décris le problème rencontré…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeReportModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="submitReport()">Envoyer le signalement</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURATION SUPABASE
+// ⚠️  Remplace ces valeurs par celles de ton projet Supabase
+// ============================================================
+const SUPABASE_URL  = 'https://kkqlciclwszuhcglhhvo.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrcWxjaWNsd3N6dWhjZ2xoaHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NzM5NTQsImV4cCI6MjA5NzM0OTk1NH0.Y1Dvtoylv18q2OuMQaKB7WR8Lz6WtpuNc6bJnQzvZW4';
+
+const EMAIL_DOMAIN  = 'ecole-se.fr';  // Domaine autorisé pour l'inscription — adapte si besoin
+
+// ============================================================
+// INITIALISATION
+// ============================================================
+const { createClient } = supabase;
+
+// Storage memoire — compatible tous navigateurs sans tracking prevention
+const memoryStorage = (() => {
+  const store = {};
+  return {
+    getItem: (key) => store[key] ?? null,
+    setItem: (key, value) => { store[key] = value; },
+    removeItem: (key) => { delete store[key]; }
+  };
+})();
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    storage: memoryStorage,
+    persistSession: false,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  }
+});
+
+let currentUser   = null;
+let currentProfile = null;
+let currentTags   = [];
+let allProfiles   = [];
+let activeChat    = null;
+let reportTarget  = null;
+let reportMessageId = null;
+let realtimeSub   = null;
+
+// ============================================================
+// AUTHENTIFICATION
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register')));
+  document.getElementById('tab-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('tab-register').classList.toggle('hidden', tab !== 'register');
+  clearAlert();
+}
+
+function showAlert(msg, type = 'error') {
+  const el = document.getElementById('auth-alert');
+  el.textContent = msg;
+  el.className = `alert alert-${type}`;
+  el.classList.remove('hidden');
+}
+
+function clearAlert() {
+  document.getElementById('auth-alert').classList.add('hidden');
+}
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) return showAlert('Remplis tous les champs.');
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) return showAlert('Email ou mot de passe incorrect.');
+}
+
+async function register() {
+  const prenom   = document.getElementById('reg-prenom').value.trim();
+  const initiale = document.getElementById('reg-initiale').value.trim().toUpperCase();
+  const email    = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass     = document.getElementById('reg-pass').value;
+  const pass2    = document.getElementById('reg-pass2').value;
+  const consent  = document.getElementById('consent-rgpd').checked;
+
+  if (!prenom || !initiale || !email || !pass || !pass2) return showAlert('Remplis tous les champs obligatoires.');
+  // Restriction domaine désactivée — toute adresse mail acceptée
+  if (pass.length < 8) return showAlert('Le mot de passe doit faire au moins 8 caractères.');
+  if (pass !== pass2) return showAlert('Les mots de passe ne correspondent pas.');
+  if (!consent) return showAlert("Tu dois accepter la charte d'utilisation pour t'inscrire.");
+  if (!/^[A-Z]$/.test(initiale)) return showAlert("L'initiale du nom doit être une seule lettre.");
+
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) return showAlert(error.message);
+
+  if (data.user) {
+    const { error: pErr } = await sb.from('profiles').insert({
+      id: data.user.id,
+      prenom,
+      initiale_nom: initiale
+    });
+    if (pErr) console.error('Erreur création profil:', pErr);
+    showAlert('Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse.', 'success');
+  }
+}
+
+async function logout() {
+  if (realtimeSub) await sb.removeChannel(realtimeSub);
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ============================================================
+// SESSION
+// ============================================================
+let appInitialized = false;
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user && !appInitialized) {
+    appInitialized = true;
+    currentUser = session.user;
+    await initApp();
+  } else if (event === 'SIGNED_OUT') {
+    appInitialized = false;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+// Fix refresh : vérifier la session ET afficher login si pas de session après timeout
+(async () => {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user && !appInitialized) {
+      appInitialized = true;
+      currentUser = session.user;
+      await initApp();
+    } else {
+      // Pas de session : afficher l'écran de connexion immédiatement
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  } catch(e) {
+    // Storage bloqué ou erreur réseau : afficher l'écran de connexion
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+})();
+
+// Sécurité : afficher login après 4 secondes si toujours en chargement
+setTimeout(() => {
+  if (!appInitialized) {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+}, 4000);
+
+async function initApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = profile;
+
+  const initials = profile ? profile.prenom[0] + profile.initiale_nom : '?';
+  document.getElementById('header-avatar').textContent = initials;
+  document.getElementById('header-name').textContent = profile ? `${profile.prenom} ${profile.initiale_nom}.` : '';
+
+  await loadProfiles();
+  if (profile) fillProfileForm(profile);
+  subscribeRealtime();
+  checkUnread();
+
+  // Afficher le bouton admin si l'utilisateur est admin
+  if (isAdmin()) {
+    document.getElementById('nav-admin').classList.remove('hidden');
+  }
+}
+
+// ============================================================
+// PROFILS
+// ============================================================
+async function loadProfiles() {
+  const { data, error } = await sb.from('profiles')
+    .select('id, prenom, initiale_nom, age, formation, budget_min, budget_max, zone, bio, tags, visible, situation')
+    .eq('visible', true)
+    .neq('id', currentUser?.id);
+
+  if (error) {
+    document.getElementById('profiles-container').innerHTML = '<p class="loader text-muted">Erreur de chargement.</p>';
+    return;
+  }
+
+  allProfiles = data || [];
+  renderProfiles(allProfiles);
+}
+
+function renderProfiles(profiles) {
+  const container = document.getElementById('profiles-container');
+  if (!profiles.length) {
+    container.innerHTML = '<p class="loader text-muted">Aucun profil trouvé.</p>';
+    return;
+  }
+
+  const colors = ['#E1F5EE:#0F6E56', '#E6F1FB:#185FA5', '#FAEEDA:#854F0B', '#EEEDFE:#534AB7', '#FAECE7:#993C1D'];
+  container.innerHTML = profiles.map((p, i) => {
+    const [bg, fg] = colors[i % colors.length].split(':');
+    const tags = (p.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+    const budget = p.budget_min && p.budget_max ? `${p.budget_min}–${p.budget_max} €` : 'Non précisé';
+    return `
+      <div class="profile-card" data-id="${p.id}" data-prenom="${p.prenom}" data-formation="${p.formation || ''}" data-zone="${p.zone || ''}">
+        <div class="profile-card-head">
+          <div class="avatar" style="background:${bg};color:${fg};width:38px;height:38px;font-size:14px;">${p.prenom[0]}${p.initiale_nom}</div>
+          <div class="profile-card-info">
+            <div class="name">${p.prenom} ${p.initiale_nom}.</div>
+            <div class="sub">${p.formation || 'Formation non précisée'}${p.age ? ' · ' + p.age + ' ans' : ''}</div>
+          </div>
+        </div>
+        <div class="situation-badge ${p.situation === 'appart_dispo' ? 'badge-appart' : 'badge-cherche'}">
+          ${p.situation === 'appart_dispo' ? '🏠 A un appart' : '🔍 Cherche une coloc'}
+        </div>
+        ${tags ? `<div class="tags">${tags}</div>` : ''}
+        <div class="profile-detail-row"><span>Budget/mois</span><strong>${budget}</strong></div>
+        <div class="profile-detail-row"><span>Zone</span><strong>${p.zone || 'Non précisée'}</strong></div>
+        ${p.bio ? `<div class="profile-bio">${p.bio}</div>` : ''}
+        <button class="contact-btn" onclick="openChat('${p.id}', '${p.prenom} ${p.initiale_nom}.')">💬 Contacter</button>
+      </div>`;
+  }).join('');
+}
+
+let currentSituationFilter = '';
+
+function selectSituation(val) {
+  document.getElementById('edit-situation').value = val;
+  document.getElementById('sit-appart').classList.toggle('selected', val === 'appart_dispo');
+  document.getElementById('sit-cherche').classList.toggle('selected', val === 'cherche_coloc');
+  document.getElementById('sit-trouve').classList.toggle('selected', val === 'coloc_trouvee');
+}
+
+function setSituationFilter(val) {
+  currentSituationFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  filterProfiles();
+}
+
+function filterProfiles() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const f = document.getElementById('filter-formation').value;
+  const filtered = allProfiles.filter(p => {
+    const matchQ = !q || [p.prenom, p.formation, p.zone, ...(p.tags || [])].join(' ').toLowerCase().includes(q);
+    const matchF = !f || p.formation === f;
+    const matchS = !currentSituationFilter || p.situation === currentSituationFilter;
+    // Masquer les "coloc trouvée" sauf si filtre explicite
+    const notTaken = currentSituationFilter === 'coloc_trouvee' || p.situation !== 'coloc_trouvee';
+    return matchQ && matchF && matchS && notTaken;
+  });
+  renderProfiles(filtered);
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+function openChat(userId, userName) {
+  showTab('chat');
+  loadChatWith(userId, userName);
+}
+
+async function loadChatWith(userId, userName) {
+  activeChat = { id: userId, name: userName };
+  await loadConversations();
+  renderChatWindow(userId, userName);
+}
+
+async function loadConversations() {
+  const { data: sent }    = await sb.from('messages').select('receiver_id').eq('sender_id', currentUser.id);
+  const { data: received } = await sb.from('messages').select('sender_id').eq('receiver_id', currentUser.id);
+
+  const ids = [...new Set([...(sent||[]).map(m=>m.receiver_id), ...(received||[]).map(m=>m.sender_id)])];
+  if (!ids.length) { document.getElementById('chat-list').innerHTML = '<p class="text-muted text-sm" style="padding:12px">Aucune conversation</p>'; return; }
+
+  const { data: profiles } = await sb.from('profiles').select('id, prenom, initiale_nom, formation').in('id', ids);
+
+  const list = document.getElementById('chat-list');
+  list.innerHTML = (profiles || []).map(p => `
+    <div class="chat-list-item ${activeChat?.id === p.id ? 'active' : ''}" onclick="loadChatWith('${p.id}', '${p.prenom} ${p.initiale_nom}.')">
+      <div class="avatar" style="width:28px;height:28px;font-size:11px;">${p.prenom[0]}${p.initiale_nom}</div>
+      <div class="chat-list-info">
+        <div class="chat-list-name">${p.prenom} ${p.initiale_nom}.</div>
+        <div class="chat-list-preview">${p.formation || ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function renderChatWindow(userId, userName) {
+  const win = document.getElementById('chat-window');
+  win.innerHTML = `
+    <div class="chat-window-header">
+      <div class="avatar" style="width:32px;height:32px;font-size:13px;">${userName[0]}?</div>
+      <div><div class="chat-window-name">${userName}</div><div class="chat-window-sub" id="chat-sub"></div></div>
+      <button class="report-btn" onclick="openReportModal('${userId}', lastMessageId)">⚑ Signaler</button>
+    </div>
+    <div class="chat-messages" id="messages-area"></div>
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="msg-input" placeholder="Écrire un message…" rows="1" onkeydown="handleMsgKey(event)"></textarea>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
+      </button>
+    </div>`;
+
+  await loadMessages(userId);
+  subscribeRealtime();
+}
+
+async function loadMessages(userId) {
+  const { data } = await sb.from('messages')
+    .select('*')
+    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id})`)
+    .order('created_at', { ascending: true });
+
+  const area = document.getElementById('messages-area');
+  if (!area) return;
+
+  area.innerHTML = (data || []).map(m => {
+    const sent = m.sender_id === currentUser.id;
+    const time = new Date(m.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    return `<div class="msg ${sent?'sent':'recv'}">
+      <div class="msg-bubble">${escapeHtml(m.content)}</div>
+      <div class="msg-time">${time}</div>
+    </div>`;
+  }).join('');
+
+  // Stocker le dernier message pour le signalement
+  if (data?.length) lastMessageId = data[data.length - 1].id;
+  area.scrollTop = area.scrollHeight;
+
+  // Marquer comme lu
+  if (data?.length) {
+    await sb.from('messages').update({ lu: true })
+      .eq('receiver_id', currentUser.id)
+      .eq('sender_id', userId)
+      .eq('lu', false);
+  }
+}
+
+async function sendMessage() {
+  if (!activeChat) return;
+  const input = document.getElementById('msg-input');
+  const content = input.value.trim();
+  if (!content) return;
+
+  input.value = '';
+  const { error } = await sb.from('messages').insert({
+    sender_id: currentUser.id,
+    receiver_id: activeChat.id,
+    content
+  });
+
+  if (!error) await loadMessages(activeChat.id);
+}
+
+function handleMsgKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function subscribeRealtime() {
+  if (realtimeSub) sb.removeChannel(realtimeSub);
+  realtimeSub = sb.channel('messages-rt')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${currentUser?.id}` },
+      async () => {
+        if (activeChat) await loadMessages(activeChat.id);
+        await loadConversations();
+        checkUnread();
+      })
+    .subscribe();
+}
+
+async function checkUnread() {
+  const { count } = await sb.from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('receiver_id', currentUser?.id)
+    .eq('lu', false);
+
+  const badge = document.getElementById('unread-badge');
+  if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+}
+
+// ============================================================
+// MON PROFIL
+// ============================================================
+function fillProfileForm(p) {
+  document.getElementById('edit-prenom').value    = p.prenom || '';
+  document.getElementById('edit-initiale').value  = p.initiale_nom || '';
+  document.getElementById('edit-age').value       = p.age || '';
+  document.getElementById('edit-formation').value = p.formation || '';
+  document.getElementById('edit-budget-min').value = p.budget_min || '';
+  document.getElementById('edit-budget-max').value = p.budget_max || '';
+  document.getElementById('edit-zone').value      = p.zone || '';
+  document.getElementById('edit-bio').value       = p.bio || '';
+  document.getElementById('toggle-visible').checked = p.visible !== false;
+  selectSituation(p.situation || 'cherche_coloc');
+  currentTags = p.tags || [];
+  renderTags();
+}
+
+function renderTags() {
+  const area = document.getElementById('tags-area');
+  const input = document.getElementById('tag-input');
+  area.innerHTML = '';
+  currentTags.forEach((tag, i) => {
+    const span = document.createElement('span');
+    span.className = 'tag-removable';
+    span.innerHTML = `${tag}<button onclick="removeTag(${i})" aria-label="Supprimer ${tag}">×</button>`;
+    area.appendChild(span);
+  });
+  area.appendChild(input);
+}
+
+function handleTagInput(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (val && currentTags.length < 8 && !currentTags.includes(val)) {
+      currentTags.push(val);
+      e.target.value = '';
+      renderTags();
+    }
+  }
+}
+
+function removeTag(i) { currentTags.splice(i, 1); renderTags(); }
+
+async function saveProfile() {
+  const data = {
+    prenom:       document.getElementById('edit-prenom').value.trim(),
+    initiale_nom: document.getElementById('edit-initiale').value.trim().toUpperCase(),
+    age:          parseInt(document.getElementById('edit-age').value) || null,
+    formation:    document.getElementById('edit-formation').value || null,
+    budget_min:   parseInt(document.getElementById('edit-budget-min').value) || null,
+    budget_max:   parseInt(document.getElementById('edit-budget-max').value) || null,
+    zone:         document.getElementById('edit-zone').value.trim() || null,
+    bio:          document.getElementById('edit-bio').value.trim() || null,
+    tags:         currentTags,
+    visible:      document.getElementById('toggle-visible').checked,
+    situation:    document.getElementById('edit-situation').value
+  };
+
+  const pAlert = document.getElementById('profile-alert');
+  if (!data.prenom || !data.initiale_nom) {
+    pAlert.textContent = 'Prénom et initiale du nom sont obligatoires.';
+    pAlert.className = 'alert alert-error';
+    pAlert.classList.remove('hidden');
+    return;
+  }
+
+  const { error } = await sb.from('profiles').upsert({ id: currentUser.id, ...data });
+  if (error) {
+    pAlert.textContent = 'Erreur lors de la sauvegarde.';
+    pAlert.className = 'alert alert-error';
+  } else {
+    pAlert.textContent = 'Profil enregistré !';
+    pAlert.className = 'alert alert-success';
+    currentProfile = { ...currentProfile, ...data };
+    document.getElementById('header-avatar').textContent = data.prenom[0] + data.initiale_nom;
+    document.getElementById('header-name').textContent = `${data.prenom} ${data.initiale_nom}.`;
+  }
+  pAlert.classList.remove('hidden');
+  setTimeout(() => pAlert.classList.add('hidden'), 3000);
+}
+
+// ============================================================
+// SUPPRESSION COMPTE
+// ============================================================
+function openDeleteModal()  { document.getElementById('delete-modal').classList.add('open'); }
+function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('open'); }
+
+async function deleteAccount() {
+  const pass = document.getElementById('delete-confirm-pass').value;
+  if (!pass) return alert('Saisis ton mot de passe.');
+
+  const { error: loginErr } = await sb.auth.signInWithPassword({ email: currentUser.email, password: pass });
+  if (loginErr) return alert('Mot de passe incorrect.');
+
+  await sb.from('profiles').delete().eq('id', currentUser.id);
+  const { error } = await sb.rpc('delete_user');
+  if (error) { alert('Erreur lors de la suppression. Contacte l\'administration.'); return; }
+
+  alert('Compte supprimé. À bientôt !');
+  location.reload();
+}
+
+// ============================================================
+// SIGNALEMENT
+// ============================================================
+function openReportModal(userId, messageId) { reportTarget = userId; reportMessageId = messageId || null; document.getElementById('report-modal').classList.add('open'); }
+function closeReportModal() { document.getElementById('report-modal').classList.remove('open'); reportTarget = null; reportMessageId = null; }
+
+async function submitReport() {
+  const motif = document.getElementById('report-motif').value.trim();
+  if (!motif) return alert('Décris le problème.');
+  await sb.from('reports').insert({ reporter_id: currentUser.id, reported_id: reportTarget, motif, message_id: reportMessageId });
+  closeReportModal();
+  alert('Signalement envoyé. L\'équipe de l\'école le traitera prochainement.');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+// Email(s) admin — ajoute ton adresse ici
+const ADMIN_EMAILS = ['damien.bizart@ecole-se.org'];
+
+function isAdmin() {
+  return currentUser && ADMIN_EMAILS.includes(currentUser.email);
+}
+
+function showTab(tab) {
+  const tabs = ['profils', 'chat', 'monprofil'];
+  if (isAdmin()) tabs.push('admin');
+  tabs.forEach(t => {
+    const screen = document.getElementById('screen-' + t);
+    const nav = document.getElementById('nav-' + t);
+    if (screen) screen.classList.toggle('active', t === tab);
+    if (nav) nav.classList.toggle('active', t === tab);
+  });
+  if (tab === 'chat') { loadConversations(); if (activeChat) loadMessages(activeChat.id); }
+  if (tab === 'admin') loadAdminData();
+}
+
+async function loadAdminData() {
+  // Stats utilisateurs
+  const { data: users } = await sb.from('profiles').select('id, prenom, initiale_nom, formation, situation, visible, created_at');
+  const { data: reports } = await sb.from('reports').select('*, profiles!reporter_id(prenom, initiale_nom)');
+
+  const total = users?.length || 0;
+  const totalReports = reports?.length || 0;
+  const openReports = reports?.filter(r => !r.traite).length || 0;
+
+  document.getElementById('stat-users').textContent = total;
+  document.getElementById('stat-reports').textContent = totalReports;
+  document.getElementById('stat-reports-open').textContent = openReports;
+
+  // Signalements
+  const reportsEl = document.getElementById('admin-reports');
+  if (!reports?.length) {
+    reportsEl.innerHTML = '<p class="text-muted text-sm" style="padding:10px">Aucun signalement.</p>';
+  } else {
+    // Charger les messages signalés
+    const reportMsgIds = reports.filter(r => r.message_id).map(r => r.message_id);
+    let messagesMap = {};
+    if (reportMsgIds.length) {
+      const { data: msgs } = await sb.from('messages').select('id, content').in('id', reportMsgIds);
+      (msgs || []).forEach(m => { messagesMap[m.id] = m; });
+    }
+
+    reportsEl.innerHTML = reports.map(r => {
+      const msg = r.message_id ? messagesMap[r.message_id] : null;
+      return `<div class="admin-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <div class="admin-row-info">
+            <div class="admin-row-name">
+              Signalement du ${new Date(r.created_at).toLocaleDateString('fr-FR')}
+              <span class="${r.traite ? 'badge-traite' : 'badge-nontraite'}" style="margin-left:6px">${r.traite ? 'Traité' : 'En attente'}</span>
+            </div>
+            <div class="admin-row-sub">Par : ${r.profiles?.prenom || '?'} ${r.profiles?.initiale_nom || ''} — Signalé : ${r.reported_id?.slice(0,8)}…</div>
+            <div class="report-motif">Motif : "${escapeHtml(r.motif)}"</div>
+          </div>
+          <div class="admin-actions">
+            ${!r.traite ? `<button class="btn-sm btn-sm-success" onclick="markReportDone('${r.id}')">✓ Marquer traité</button>` : ''}
+            <button class="btn-sm btn-sm-danger" onclick="deleteUserById('${r.reported_id}')">🗑 Supprimer user</button>
+          </div>
+        </div>
+        ${msg ? `<div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:8px;padding:8px 12px;font-size:12px;width:100%;box-sizing:border-box;">
+          <span style="color:#92400e;font-weight:600;">Message signalé :</span>
+          <span style="color:#78350f;margin-left:6px;">${escapeHtml(msg.content)}</span>
+          <button class="btn-sm btn-sm-danger" style="margin-left:10px;font-size:11px;" onclick="deleteMessage('${r.message_id}', '${r.id}')">🗑 Supprimer ce message</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // Utilisateurs
+  const usersEl = document.getElementById('admin-users');
+  if (!users?.length) {
+    usersEl.innerHTML = '<p class="text-muted text-sm" style="padding:10px">Aucun utilisateur.</p>';
+  } else {
+    usersEl.innerHTML = users.map(u => `
+      <div class="admin-row">
+        <div class="admin-row-info">
+          <div class="admin-row-name">${u.prenom} ${u.initiale_nom}. ${!u.visible ? '<span style="font-size:11px;color:var(--text-muted)">(profil masqué)</span>' : ''}</div>
+          <div class="admin-row-sub">${u.formation || 'Formation non renseignée'} · ${u.situation === 'appart_dispo' ? '🏠 A un appart' : '🔍 Cherche'} · Inscrit le ${new Date(u.created_at).toLocaleDateString('fr-FR')}</div>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-sm btn-sm-danger" onclick="confirmDeleteUser('${u.id}', '${u.prenom} ${u.initiale_nom}')">🗑 Supprimer</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+async function markReportDone(reportId) {
+  await sb.from('reports').update({ traite: true }).eq('id', reportId);
+  loadAdminData();
+}
+
+async function deleteMessage(messageId, reportId) {
+  if (!confirm('Supprimer ce message définitivement ?')) return;
+  await sb.from('messages').delete().eq('id', messageId);
+  await sb.from('reports').update({ traite: true, message_id: null }).eq('id', reportId);
+  alert('Message supprimé et signalement marqué comme traité.');
+  loadAdminData();
+}
+
+function confirmDeleteUser(userId, name) {
+  if (confirm(`Supprimer définitivement le compte de ${name} ? Cette action est irréversible.`)) {
+    deleteUserById(userId);
+  }
+}
+
+async function deleteUserById(userId) {
+  const { error } = await sb.rpc('admin_delete_user', { target_user_id: userId });
+  if (error) {
+    alert('Erreur lors de la suppression : ' + error.message);
+  } else {
+    alert('Compte supprimé définitivement.');
+    loadAdminData();
+  }
+}
+
+// ============================================================
+// UTILITAIRES
+// ============================================================
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Fermeture modales au clic extérieur
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => { if (e.target === bd) { closeDeleteModal(); closeReportModal(); } });
+});
+</script>
+</body>
+</html>
